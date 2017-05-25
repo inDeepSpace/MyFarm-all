@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:background="#ffffff"
+        android:id="@+id/control_details_lis_item2">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.54"
+            android:gravity="center_vertical"
+            android:paddingLeft="10dp"
+            tools:text="1"
+            android:textColor="#000000"
+            tools:ignore="RtlSymmetry"
+            android:textSize="30sp"
+            android:layout_marginLeft="10dp"
+            android:id="@+id/control_details_list_item2_id_text_view"/>
+
+        <SeekBar
+            android:id="@+id/control_details_list_item2_seek_bar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:maxHeight="2dp"
+            android:progressDrawable="@drawable/seek_bar"
+            android:max="100"/>
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_margin="5dp"
+            android:layout_weight="1"
+            android:background="@drawable/button"
+            android:text="确定" />
+
+    </LinearLayout>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.1dp"
+        android:background="#e0e0e0">
+
+    </View>
+
+</LinearLayout>
