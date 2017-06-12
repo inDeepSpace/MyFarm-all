@@ -40,7 +40,8 @@
             android:layout_margin="5dp"
             android:layout_weight="1"
             android:background="@drawable/button"
-            android:text="确定" />
+            android:text="确定"
+            android:id="@+id/conrrol_details_list_item2_button"/>
 
     </LinearLayout>
     <View

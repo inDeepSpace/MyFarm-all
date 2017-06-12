@@ -2,6 +2,7 @@ package com.example.zhangnan.myfarm;
 
 import android.util.Log;
 
+import com.alibaba.fastjson.JSON;
 import com.example.zhangnan.myfarm.activity_information.Controller;
 import com.example.zhangnan.myfarm.activity_information.Draught_FanController;
 import com.example.zhangnan.myfarm.activity_information.FieldsInfo;
@@ -19,8 +20,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
@@ -28,10 +31,12 @@ import okhttp3.Response;
  */
 
 public class VisitServer {
-    private String fieldsUrl = "http://10.0.2.2:8080/MyFarm/fields";
-    private String controllerDetailUrl="http://10.0.2.2:8080/MyFarm/controllers";
+    private String fieldsUrl = "http://farm.kideasoft.com/fields";
+    private String controllerDetailUrl="http://farm.kideasoft.com/controllers";
     private OkHttpClient okHttpClient;
     private static final String TAG="VisitServer";
+    private static final MediaType JSON=MediaType.parse("application/json; charset=utf-8");
+    private String controlUrl="http://farm.kideasoft.com/set_judgement";
 
 
 
@@ -101,7 +106,7 @@ public class VisitServer {
             JSONArray jsonArrayD=object.getJSONArray("draught_fan");
             for (int i=0;i<jsonArrayD.length();i++){
                 JSONObject jsonObjectD=jsonArrayD.getJSONObject(i);
-                controller.getDraught_fensController().add(new Draught_FanController(jsonObjectD.getString("id"),jsonObjectD.getString("type"),
+                controller.getDraught_fansController().add(new Draught_FanController(jsonObjectD.getString("id"),jsonObjectD.getString("type"),
                         jsonObjectD.getString("state")));
                 //Log.d(TAG, "parseControllers: 33"+controller.getWater_pumpControllers().get(i).getId());
             }
@@ -143,5 +148,24 @@ public class VisitServer {
         }
         //Log.d(TAG, "getControllers:77 "+controller.getLightControllers().get(1).getState());
         return controller;
+    }
+    //Post
+    public String postJson(String json){
+        okHttpClient=new OkHttpClient();
+        String jsonString=null;
+        RequestBody requestBody=RequestBody.create(JSON,json);
+        Request request=new Request.Builder().url(controlUrl).post(requestBody).build();
+        try {
+            Response response=okHttpClient.newCall(request).execute();
+            Log.d(TAG, "postJson: !!!!!");
+            if(response.isSuccessful()){
+                Log.d(TAG, "postJson: ++++++");
+                jsonString=response.body().string();
+                Log.d(TAG, "postJson: "+jsonString);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return jsonString;
     }
 }

@@ -69,19 +69,25 @@
                 <android.support.v7.widget.RecyclerView
                     android:id="@+id/fields_details_recycler_view"
                     android:layout_width="match_parent"
-                    android:layout_height="300dp"
-                    android:background="@color/white">
+                    android:layout_height="wrap_content">
 
                 </android.support.v7.widget.RecyclerView>
+                
+                <com.example.zhangnan.myfarm.OneSelfView.FlushView
+                    android:id="@+id/landing_view"
+                    android:background="@color/white"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
 
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="250dp"
+                android:layout_height="300dp"
                 android:layout_marginTop="5dp"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:background="@color/white">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -93,14 +99,18 @@
                     android:textColor="#000000"
                     android:textSize="16sp"
                     tools:ignore="RtlSymmetry" />
-
-                <com.github.mikephil.charting.charts.BarChart
-                    android:id="@+id/bar_chart"
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="#ffffff">
+                    android:layout_height="match_parent">
 
-                </com.github.mikephil.charting.charts.BarChart>
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/line_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginBottom="5dp">
+
+                    </com.github.mikephil.charting.charts.LineChart>
+                </FrameLayout>
 
 
             </LinearLayout>

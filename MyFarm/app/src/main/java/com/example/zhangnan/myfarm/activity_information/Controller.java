@@ -10,15 +10,25 @@ import java.util.List;
  */
 
 public class Controller {
-    private List<Draught_FanController> draught_fensController;
+    private List<Draught_FanController> draught_fansController;
     private List<LightController> lightControllers;
     private List<Film_SideController> film_sideControllers;
     private List<Film_TopController> film_topControllers;
     private List<WaningController> waningControllers;
     private List<Water_PumpController> water_pumpControllers;
 
+    public String getCurrentController() {
+        return currentController;
+    }
+
+    public void setCurrentController(String currentController) {
+        this.currentController = currentController;
+    }
+
+    private String currentController;
+
     public Controller() {
-        draught_fensController=new ArrayList<>();
+        draught_fansController=new ArrayList<>();
         lightControllers=new ArrayList<>();
         film_sideControllers=new ArrayList<>();
         film_topControllers=new ArrayList<>();
@@ -26,12 +36,12 @@ public class Controller {
         water_pumpControllers=new ArrayList<>();
     }
 
-    public List<Draught_FanController> getDraught_fensController() {
-        return draught_fensController;
+    public List<Draught_FanController> getDraught_fansController() {
+        return draught_fansController;
     }
 
-    public void setDraught_fens(List<Draught_FanController> draught_fens) {
-        this.draught_fensController = draught_fens;
+    public void setDraught_fans(List<Draught_FanController> draught_fens) {
+        this.draught_fansController = draught_fens;
     }
 
     public List<LightController> getLightControllers() {

@@ -39,21 +39,21 @@ import java.util.Map;
 
 public class MyFarmActivity extends AppCompatActivity {
 
-    private String[] name={"My Farm","远程控制","机器人控制","报警信息","历史图表","历史数据","设置","关于我们"};
+    private String[] name={"My Farm","远程控制","机器人控制","报警信息","历史图表","历史记录","设置","关于我们"};
     private  String[] values = new String[]{ "操作记录", "日志", "检查更新", "设置","退出登录",};
     private  int[] img = new int[]{R.drawable.ic_action_record,R.drawable.ic_action_log,
             R.drawable.ic_action_update,R.drawable.ic_action_setting, R.drawable.ic_action_quit};
     private List<Map<String, Object>> data;
 
     private int itemImages[] = {
-            R.drawable.farm,
-            R.drawable.kongzhi,
-            R.drawable.jiankong,
-            R.drawable.jinggao,
-            R.drawable.huanjing,
-            R.drawable.shuju,
-            R.drawable.shezhi,
-            R.drawable.image_1
+            R.drawable.fielddetails,
+            R.drawable.control2,
+            R.drawable.robotcontrol,
+            R.drawable.alert,
+            R.drawable.chart,
+            R.drawable.pen,
+            R.drawable.setting,
+            R.drawable.aboutus
     };
 
     private Intent i;
@@ -92,14 +92,14 @@ public class MyFarmActivity extends AppCompatActivity {
         recyclerView.addItemDecoration(new MyFarmItemDecoration(2));
         recyclerView.setAdapter(new SoundAdapter());
         InitMenuBar();
-        addFragment(new FieldsFragment(),"FieldsFragment");
+        replaceFragment(new FieldsFragment(),"FieldsFragment");
 
     }
 
-    public void addFragment(Fragment fragment, String tag) {
+    public void replaceFragment(Fragment fragment, String tag) {
         FragmentManager manager = getFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
-        transaction.add(R.id.fragment_container, fragment, tag);
+        transaction.replace(R.id.fragment_container, fragment, tag);
         transaction.commit();
     }
 
@@ -137,8 +137,8 @@ public class MyFarmActivity extends AppCompatActivity {
         public void onClick(View view) {
 //            listLinearLayout.setBackground(getResources().getDrawable(R.drawable.my_farm_list_item_background));
             switch (getPosition()){
-                case 0:addFragment(new FieldsFragment(),"FieldsFragment");break;
-                case 1:addFragment(new ControlFragment(),"ControlFragment");break;
+                case 0:replaceFragment(new FieldsFragment(),"FieldsFragment");break;
+                case 1:replaceFragment(new ControlFragment(),"ControlFragment");break;
             }
         }
 

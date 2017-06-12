@@ -2,6 +2,7 @@ package com.example.zhangnan.myfarm;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
@@ -10,6 +11,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -20,9 +22,17 @@ import android.widget.TextView;
 public class ControlActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
-    public String[] name = {"水泵","环流风机","照明灯","遮阳网","侧卷膜","顶卷膜"};
-    private SoundAdapter soundAdapter;
-    private String TAG="ControlActivity";
+    public String[] name = {"水泵","环流水机","照明灯","遮阳网","侧卷膜","顶卷膜"};
+    public int[] image = {
+            R.drawable.shuibeng,
+            R.drawable.huanjing,
+            R.drawable.zhaoming,
+            R.drawable.mo,
+            R.drawable.cejuanmo,
+            R.drawable.cejuanmo,
+    };
+    private SoundAdapter soundAdapter;//唐靖修改
+    private String TAG="ControlActivity";//Tag凌锐修改
     private Intent i;
 
     @Override
@@ -43,14 +53,14 @@ public class ControlActivity extends AppCompatActivity {
         private TextView controlTextViewName;
         private LinearLayout controlLinearLayout;
         private String controllerName;
+        private ImageView controlImageView;
 
 
         public SoundHodler(View view) {
             super(view);
             controlTextViewName = (TextView)itemView.findViewById(R.id.control_list_item_textview_name);
-
             controlLinearLayout = (LinearLayout)itemView.findViewById(R.id.control_list_item);
-
+            controlImageView = (ImageView)itemView.findViewById(R.id.control_img);
             controlLinearLayout.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -79,6 +89,7 @@ public class ControlActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(SoundHodler soundHodler, int position) {
             soundHodler.controlTextViewName.setText(name[position]);
+            soundHodler.controlImageView.setBackground(getDrawable(image[position]));
         }
 
         @Override

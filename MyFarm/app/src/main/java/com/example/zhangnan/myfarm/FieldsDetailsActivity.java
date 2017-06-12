@@ -5,41 +5,39 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
-
+import com.example.zhangnan.myfarm.ChartUtils.ChartUtils;
+import com.example.zhangnan.myfarm.OneSelfView.FlushView;
 import com.example.zhangnan.myfarm.activity_information.FieldsDetailsInfo;
-import com.example.zhangnan.myfarm.activity_information.blower;
 import com.example.zhangnan.myfarm.activity_information.co2;
-import com.example.zhangnan.myfarm.activity_information.lamp;
 import com.example.zhangnan.myfarm.activity_information.light;
-import com.example.zhangnan.myfarm.activity_information.nmembrane;
-import com.example.zhangnan.myfarm.activity_information.pump;
 import com.example.zhangnan.myfarm.activity_information.salt;
-import com.example.zhangnan.myfarm.activity_information.tmembrane;
 import com.example.zhangnan.myfarm.activity_information.water;
-import com.example.zhangnan.myfarm.activity_information.web;
-import com.github.mikephil.charting.charts.BarChart;
-import com.github.mikephil.charting.data.BarData;
-import com.github.mikephil.charting.data.BarDataSet;
-import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.utils.ColorTemplate;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
 import com.melnykov.fab.FloatingActionButton;
 import com.melnykov.fab.ObservableScrollView;
+
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -53,7 +51,7 @@ public class FieldsDetailsActivity extends AppCompatActivity {
     private ViewPager viewPager_banner;
     private ImageView[] mImageViews;
     private int[] imgIdArray;
-    private BarChart barChart;
+    private LineChart lineChart;
     private RecyclerView fieldsDetailsRecyclerView;
     private String[] name ={"light","co2","water","salt"};
     private SeekBar tmembraneSeekBar;
@@ -63,18 +61,44 @@ public class FieldsDetailsActivity extends AppCompatActivity {
     private Intent intentMessage;
     private TextView nameTextView;
     private String fieldsName;
+    private String TGA="FDA";
+    private Button fild_sideButton;
+    private Button fild_topButton;
+    private FlushView mUCFlushView;
 
-    private FieldsDetailsInfo fieldsDetailsInfo;
-    private int fieldsDetailsInfoCount = 0;
-    private int defaultCount = 4;
+    private MqttMessages mQttMessages;
+    private RecyclerView.Adapter fieldsDetailsAdapter;
+
+    private FieldsDetailsInfo mFieldsDetailsInfo;
+    private int count;
     public Map<Integer, String> fieldsDetailsSensorsInfoMap = new HashMap();
-    public Map<Integer, Float> fieldsDetailsControlsInfoMap = new HashMap();
+    private String[] sensorsName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fields_details);
         getWindow().setStatusBarColor(getResources().getColor(R.color.app_green));
+
+        //订阅当前田地详情主题
+        mQttMessages = new MqttMessages("fields"+String.valueOf(FieldsActivity.clickItemPosition));
+        Log.d("topic","fields"+String.valueOf(FieldsActivity.clickItemPosition));
+
+        MqttMessages.updateUIHandler = new Handler(){
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                if (msg.what == 1){
+                    mFieldsDetailsInfo = (FieldsDetailsInfo) msg.obj;
+                    count = mFieldsDetailsInfo.getSensorsCount();
+                    updateData();
+                    updateUI();
+                    Log.d("count", String.valueOf(count));
+                }
+            }
+        };
+
+        mUCFlushView = (FlushView) findViewById(R.id.landing_view);
 
         nameTextView = (TextView) findViewById(R.id.fields_name);
         imgIdArray = new int[]{R.drawable.img1, R.drawable.img2, R.drawable.img3,R.drawable.img4,R.drawable.img5};
@@ -88,23 +112,36 @@ public class FieldsDetailsActivity extends AppCompatActivity {
 
         fieldsDetailsRecyclerView = (RecyclerView)findViewById(R.id.fields_details_recycler_view);
         fieldsDetailsRecyclerView.setLayoutManager(new GridLayoutManager(this,2));
-        fieldsDetailsRecyclerView.addItemDecoration(new MyFieldsDetailsItemDecoration(5));
-        fieldsDetailsRecyclerView.setAdapter(new FieldsDetailsAdapter());
+        fieldsDetailsRecyclerView.addItemDecoration(new MyFieldsDetailsItemDecoration(2));
+        fieldsDetailsRecyclerView.setAdapter(fieldsDetailsAdapter = new FieldsDetailsAdapter());
 
         viewPager_banner = (ViewPager) findViewById(R.id.fields_list_item_view_pager_banner);
         viewPager_banner.setAdapter(new BannerViewPagerAdapter());
 
-        drawChart();
+        lineChart = (LineChart) findViewById(R.id.line_chart);
+        ChartUtils.initChart(lineChart);
+        ChartUtils.notifyDataSetChanged(lineChart, getData(), ChartUtils.dayValue);
+
         initFloatingActionButton();
-        getIntentMessage();
-        fieldsDetailsSensorsInfoToString();
-        fieldsDetailsControlInfoToString();
         initControls();
-        changeSwitchText();
+        //changeSwitchText();
+        getIntentMessage();
 
         nameTextView.setText(fieldsName);
 
 
+    }
+
+    private List<Entry> getData() {
+        List<Entry> values = new ArrayList<>();
+        values.add(new Entry(0, 13));
+        values.add(new Entry(1, 14));
+        values.add(new Entry(2, 15));
+        values.add(new Entry(3, 30));
+        values.add(new Entry(4, 25));
+        values.add(new Entry(5, 1));
+        values.add(new Entry(6, 20));
+        return values;
     }
 
     private  class FieldsDetailsHodler extends RecyclerView.ViewHolder {
@@ -129,23 +166,15 @@ public class FieldsDetailsActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(FieldsDetailsHodler fieldsDetailsHodler, int position) {
-            fieldsDetailsHodler.sensorsNameTextView.setTextSize(15);
-            fieldsDetailsHodler.sensorsNameTextView.setTextColor(Color.parseColor("#e0e0e0"));
-            fieldsDetailsHodler.sensorsNameTextView.setText("正在加载...");
-
-            //从fieldsDetailsSensorsInfoMap取出值给每一个item更新数据
-            if (!fieldsDetailsControlsInfoMap.isEmpty()) {
-                fieldsDetailsHodler.sensorsDetailsTextView.setText(fieldsDetailsSensorsInfoMap.get(position));
-            }
-
+            fieldsDetailsHodler.sensorsNameTextView.setText(sensorsName[position]);
+            fieldsDetailsHodler.sensorsDetailsTextView.setTextSize(15);
+            fieldsDetailsHodler.sensorsDetailsTextView.setTextColor(Color.parseColor("#000000"));
+            fieldsDetailsHodler.sensorsDetailsTextView.setText(fieldsDetailsSensorsInfoMap.get(position));
         }
 
         @Override
         public int getItemCount() {
-            if (fieldsDetailsInfoCount == 0){
-                fieldsDetailsInfoCount = defaultCount;
-            }
-            return fieldsDetailsInfoCount;
+            return count;
         }
     }
 
@@ -194,25 +223,6 @@ public class FieldsDetailsActivity extends AppCompatActivity {
         });
     }
 
-    public void drawChart(){
-        barChart = (BarChart)findViewById(R.id.bar_chart);
-
-        List<BarEntry> entries = new ArrayList<>();
-        entries.add(new BarEntry(1,1));
-        entries.add(new BarEntry(2,2));
-        entries.add(new BarEntry(3,3));
-        entries.add(new BarEntry(4,4));
-        entries.add(new BarEntry(5,5));
-        entries.add(new BarEntry(6,6));
-        BarDataSet dataSet = new BarDataSet(entries,"");
-       dataSet.setColors(ColorTemplate.COLORFUL_COLORS);
-
-        BarData data = new BarData(dataSet);
-
-        barChart.setDescription(null);
-        barChart.setDrawValueAboveBar(false);
-        barChart.setData(data);
-    }
 
     public class MyFieldsDetailsItemDecoration extends RecyclerView.ItemDecoration{
         int mSpace;
@@ -223,11 +233,9 @@ public class FieldsDetailsActivity extends AppCompatActivity {
             if (parent.getChildAdapterPosition(view)%2 == 0) {
                 outRect.right = mSpace;
                 outRect.bottom = mSpace;
-                outRect.top = mSpace;
             } else{
                 outRect.left = mSpace;
                 outRect.bottom = mSpace;
-                outRect.top = mSpace;
             }
 
         }
@@ -244,128 +252,226 @@ public class FieldsDetailsActivity extends AppCompatActivity {
         lightSwitch = (Switch) findViewById(R.id.fields_details_light_switch);
         tmembraneSeekBar = (SeekBar) findViewById(R.id.tmembrane_seek_bar);
         nmembraneSeekBar = (SeekBar) findViewById(R.id.nmembrane_seek_bar);
-        if (!fieldsDetailsControlsInfoMap.isEmpty()){
-                if ((float)fieldsDetailsControlsInfoMap.get(k++) == 1.0f){
-                    lampSwitch.setChecked(true);
-                }else {
-                    lampSwitch.setChecked(false);
-                }
-
-                if ((float)fieldsDetailsControlsInfoMap.get(k++) == 1.0f){
-                    lightSwitch.setChecked(true);
-                }else lampSwitch.setChecked(false);
-
-
-                tmembraneSeekBar.setProgress((int) (fieldsDetailsControlsInfoMap.get(k++) * 100));
-                nmembraneSeekBar.setProgress((int) (fieldsDetailsControlsInfoMap.get(k++) * 100));
-            }
+        fild_sideButton=(Button)findViewById(R.id.fields_details_film_side_sure_button);
+        fild_topButton=(Button)findViewById(R.id.fields_details_film_top_sure_button);
+//        if (!fieldsDetailsControlsInfoMap.isEmpty()){
+//                if ((float)fieldsDetailsControlsInfoMap.get(k++) == 1.0f){
+//                    lampSwitch.setChecked(true);
+//                }else {
+//                    lampSwitch.setChecked(false);
+//                }
+//
+//                if ((float)fieldsDetailsControlsInfoMap.get(k++) == 1.0f){
+//                    lightSwitch.setChecked(true);
+//                }else lampSwitch.setChecked(false);
+//
+//
+//                tmembraneSeekBar.setProgress((int) (fieldsDetailsControlsInfoMap.get(k++) * 100));
+//                nmembraneSeekBar.setProgress((int) (fieldsDetailsControlsInfoMap.get(k++) * 100));
+//            }
     }
 
-    public void changeSwitchText(){
-        lightSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked){
-                    lightSwitch.setText("开");
-                }else {
-                    lightSwitch.setText("关");
-                }
-            }
-        });
+//    public void changeSwitchText(){
+//        final String[] s = new String[1];
+//        final String[] t = new String[1];
+//            fild_sideButton.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    if(fieldsDetailsInfo!=null){
+//                    new ControlDetalisActivity().postJsonTask(s[0]);}
+//                }
+//            });
+//            fild_topButton.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    if(fieldsDetailsInfo!=null){
+//                    new ControlDetalisActivity.postJsonTask().execute(t[0]);}
+//                }
+//            });
+//            lightSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//                @Override
+//                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+//                    if (isChecked) {
+//                            lightSwitch.setText("开");
+//                            if (fieldsDetailsInfo!=null) {
+//                            LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
+//                            map.put("type", "light");
+//                            map.put("target", String.valueOf(fieldsDetailsInfo.getWeb()[0].getId()));
+//                            map.put("commond", "1");
+//                            String jsonString = new Gson().toJson(map);
+//                            Log.d(TGA, "switchClick:" + jsonString);
+//                            new ControlDetalisActivity.postJsonTask().execute(jsonString);}
+//
+//                    } else {
+//                            lightSwitch.setText("关");
+//                            if (fieldsDetailsInfo!=null) {
+//                            LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
+//                            map.put("type", "light");
+//                            map.put("target", String.valueOf(fieldsDetailsInfo.getWeb()[0].getId()));
+//                            map.put("commond", "0");
+//                            String jsonString = new Gson().toJson(map);
+//                            Log.d(TGA, "switchClick:" + jsonString);
+//                            new ControlDetalisActivity.postJsonTask().execute(jsonString);}
+//                    }
+//
+//                }});
+//            lampSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//                @Override
+//                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+//                    if (isChecked) {
+//                        lampSwitch.setText("开");
+//                        if (fieldsDetailsInfo!=null) {
+//                            LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
+//                            map.put("type", "draught_fan");
+//                            map.put("target", String.valueOf(fieldsDetailsInfo.getLamp()[0].getId()));
+//                            map.put("commond", "1");
+//                            String jsonString = new Gson().toJson(map);
+//                            Log.d(TGA, "switchClick:" + jsonString);
+//                            new ControlDetalisActivity.postJsonTask().execute(jsonString);}
+//
+//                    } else {
+//                        lampSwitch.setText("关");
+//                        if (fieldsDetailsInfo!=null) {
+//                            LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
+//                            map.put("type", "draught_fan");
+//                            map.put("target", String.valueOf(fieldsDetailsInfo.getLamp()[0].getId()));
+//                            map.put("commond", "0");
+//                            String jsonString = new Gson().toJson(map);
+//                            Log.d(TGA, "switchClick:" + jsonString);
+//                            new ControlDetalisActivity.postJsonTask().execute(jsonString);}
+//                    }
+//
+//                }});
+//            tmembraneSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+//                @Override
+//                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+//
+//                }
+//
+//                @Override
+//                public void onStartTrackingTouch(SeekBar seekBar) {
+//
+//                }
+//
+//                @Override
+//                public void onStopTrackingTouch(SeekBar seekBar) {
+//                    if(fieldsDetailsInfo!=null){
+//                        LinkedHashMap<String,String>map=new LinkedHashMap<String,String>();
+//                        map.put("type","film_side");
+//                        map.put("target", String.valueOf(fieldsDetailsInfo.getTmembrane()[0].getId()));
+//                        map.put("commond", String.valueOf(seekBar.getProgress()));
+//                        s[0] =new Gson().toJson(map);
+//                        Log.d(TGA, "onProgressChanged: "+ s[0]);
+//                        }
+//                }
+//            });
+//            nmembraneSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+//                @Override
+//                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+//
+//                }
+//
+//                @Override
+//                public void onStartTrackingTouch(SeekBar seekBar) {
+//
+//                }
+//
+//                @Override
+//                public void onStopTrackingTouch(SeekBar seekBar) {
+//                    if(fieldsDetailsInfo!=null){
+//                        LinkedHashMap<String,String>map=new LinkedHashMap<String,String>();
+//                        map.put("type","film_top");
+//                        map.put("target", String.valueOf(fieldsDetailsInfo.getNmembrane()[0].getId()));
+//                        map.put("commond", String.valueOf(seekBar.getProgress()));
+//                        t[0] =new Gson().toJson(map);
+//                        Log.d(TGA, "onProgressChanged: "+t);
+//                        }
+//                }
+//            });
+//
+//            //new ControlDetalisActivity().switchClick(lightSwitch,fieldsDetailsInfo.getWeb()[0].getId(),"light");
+//            //new ControlDetalisActivity().switchClick(lampSwitch,fieldsDetailsInfo.getWeb()[0].getId(),"draught");
+//
+//
+//
+//    }
 
-        lampSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked){
-                    lampSwitch.setText("开");
-                }else {
-                    lampSwitch.setText("关");
-                }
-            }
-        });
-    }
-
-
-
-    //得到上一个页面intent传来的FieldsDetailsInfo
     private void getIntentMessage(){
-        intentMessage = getIntent();
-        if (intentMessage.getExtras()!=null){
-            int position = (int) intentMessage.getExtras().get("position");
-            fieldsName = (String) intentMessage.getExtras().get("name");
-            System.out.println("*******************"+fieldsName);
-            if (!MqttMessages.messageMap.isEmpty())
-            {
-                fieldsDetailsInfo =  MqttMessages.messageMap.get(position);
-                fieldsDetailsInfoCount = fieldsDetailsInfo.getCount();
-            }
-        }
-
+        Bundle mBundle = getIntent().getExtras();
+        fieldsName = mBundle.getString("name");
     }
 
-    //将FieldsDetailsInfo对象中的sensor元素的每个数组以String存放在fieldsDetailsSensorsInfoMap中
+
+    private void updateData(){
+        fieldsDetailsSensorsInfoToString();
+        fieldsDetailsAdapter.notifyDataSetChanged();
+    }
+
+    private void updateUI(){
+        if (count != 0){
+            LinearLayout.LayoutParams param = new LinearLayout.LayoutParams(0,0);
+            mUCFlushView.setLayoutParams(param);
+        }else {
+            LinearLayout.LayoutParams param = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT);
+            mUCFlushView.setLayoutParams(param);
+        }
+    }
+
     private void fieldsDetailsSensorsInfoToString(){
-        if (fieldsDetailsInfo != null){
+        if (mFieldsDetailsInfo != null){
             int k = 0;
-            for (int i = 0;i < fieldsDetailsInfo.getLight().length;i++){
-                light[] l = fieldsDetailsInfo.getLight();
-                fieldsDetailsSensorsInfoMap.put(k++,String.valueOf(l[i].getC())+
-                        String.valueOf(l[i].getLux())+
-                        String.valueOf(l[i].getPh()));
+            sensorsName = new String[count];
+
+            if (mFieldsDetailsInfo.getLight() != null) {
+                for (int i = 0; i < mFieldsDetailsInfo.getLight().length; i++) {
+                    light[] l = mFieldsDetailsInfo.getLight();
+                    sensorsName[k] = "光照温湿度变送器" + String.valueOf(l[i].getId());
+                    fieldsDetailsSensorsInfoMap.put(k++, "温度：" + String.valueOf(l[i].getC()) + '\n' +
+                            "酸碱度：" + String.valueOf(l[i].getPh()) + '\n' +
+                            "光照强度：" + String.valueOf(l[i].getLux()));
+
+                }
             }
 
-            for (int i = 0;i < fieldsDetailsInfo.getCo2().length;i++){
-                co2[] c = fieldsDetailsInfo.getCo2();
-                fieldsDetailsSensorsInfoMap.put(k++,String.valueOf(c[i].getC())+
-                        String.valueOf(c[i].getCo2())+
-                        String.valueOf(c[i].getPh()));
+            if (mFieldsDetailsInfo.getCo2() != null) {
+                for (int i = 0; i < mFieldsDetailsInfo.getCo2().length; i++) {
+                    co2[] c = mFieldsDetailsInfo.getCo2();
+                    sensorsName[k] = "二氧化碳温湿度变送器" + String.valueOf(c[i].getId());
+                    fieldsDetailsSensorsInfoMap.put(k++, "温度：" + String.valueOf(c[i].getC()) + '\n' +
+                            "酸碱度：" + String.valueOf(c[i].getPh()) + '\n' +
+                            "二氧化碳浓度：" + String.valueOf(c[i].getCo2()));
+                }
             }
 
-            for (int i = 0;i < fieldsDetailsInfo.getWater().length;i++){
-                water[] w = fieldsDetailsInfo.getWater();
-                fieldsDetailsSensorsInfoMap.put(k++,String.valueOf(w[i].getC())+
-                        String.valueOf(w[i].getPe()));
+            if (mFieldsDetailsInfo.getWater() != null){
+                for (int i = 0;i < mFieldsDetailsInfo.getWater().length;i++){
+                    water[] w = mFieldsDetailsInfo.getWater();
+                    sensorsName[k] = "土壤水分传感器" + String.valueOf(w[i].getId());
+                    fieldsDetailsSensorsInfoMap.put(k++,"温度："+String.valueOf(w[i].getC())+'\n'+
+                            "湿度："+String.valueOf(w[i].getPe()));
+                }
             }
 
-            for (int i = 0;i < fieldsDetailsInfo.getSalt().length;i++){
-                salt[] s = fieldsDetailsInfo.getSalt();
-                fieldsDetailsSensorsInfoMap.put(k++,String.valueOf(s[i].getMg()+
-                        s[i].getUs()));
+
+            if (mFieldsDetailsInfo.getSalt() != null ){
+                for (int i = 0;i < mFieldsDetailsInfo.getSalt().length;i++){
+                    salt[] s = mFieldsDetailsInfo.getSalt();
+                    sensorsName[k] = "土壤检测传感" + String.valueOf(s[i].getId());
+                    fieldsDetailsSensorsInfoMap.put(k++,"电导率："+String.valueOf(s[i].getMg())+'\n'+
+                            "盐分："+s[i].getUs());
+                }
             }
+
 
         }
 
     }
 
-    //同上
-    private void fieldsDetailsControlInfoToString(){
-
-        if (fieldsDetailsInfo != null){
-            int k = 0;
-
-            for (int i = 0;i < fieldsDetailsInfo.getLamp().length;i++){
-                lamp[] l = fieldsDetailsInfo.getLamp();
-                fieldsDetailsControlsInfoMap.put(k++, (float) l[i].getValue());
-            }
-
-            for (int i = 0;i < fieldsDetailsInfo.getWeb().length;i++){
-                web[] w = fieldsDetailsInfo.getWeb();
-                fieldsDetailsControlsInfoMap.put(k++, (float) w[i].getValue());
-            }
-
-            for (int i = 0;i < fieldsDetailsInfo.getNmembrane().length;i++){
-                nmembrane[] n = fieldsDetailsInfo.getNmembrane();
-                fieldsDetailsControlsInfoMap.put(k++,n[i].getValue());
-            }
-
-            for (int i = 0;i < fieldsDetailsInfo.getTmembrane().length;i++){
-                tmembrane[] t = fieldsDetailsInfo.getTmembrane();
-                fieldsDetailsControlsInfoMap.put(k++,t[i].getValue());
-            }
-        }
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mQttMessages.close();
     }
-
 }
 
 

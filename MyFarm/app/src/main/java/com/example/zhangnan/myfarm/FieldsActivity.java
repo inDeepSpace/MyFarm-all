@@ -31,7 +31,7 @@ import java.util.Map;
 public class FieldsActivity extends AppCompatActivity{
 
     private RecyclerView recyclerView;
-    private int recyclerViewClickTag = 0;//RerecyclerView点击标志
+    private int recyclerViewClickTag = 0;//RerecyclerView点击标志kjjkj
     private Intent i;
 
     private EditText searchEditText;
@@ -41,6 +41,8 @@ public class FieldsActivity extends AppCompatActivity{
     private Map<String,String> mqttMessagesMap = new HashMap<>();
     private SoundAdapter soundAdapter;
     private List<FieldsInfo> fieldsInfos=new ArrayList<>();
+    public static int clickItemPosition;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +54,12 @@ public class FieldsActivity extends AppCompatActivity{
         recyclerView = (RecyclerView) findViewById(R.id.fields_recycler_view);
         recyclerView.setLayoutManager(new GridLayoutManager(this,1));
         recyclerView.setAdapter(soundAdapter = new SoundAdapter(fieldsInfos));
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                new VisitServer().postJson("{}");
+            }
+        }).start();
     }
 
     private void initSearch(){
@@ -89,22 +97,13 @@ public class FieldsActivity extends AppCompatActivity{
 
         @Override
         public void onClick(View view) {
-            if (!MqttMessages.messageMap.isEmpty()){
-                i = FieldsDetailsActivity.newIntent(FieldsActivity.this);
-                Bundle bundle = new Bundle();
-                bundle.putString("name","hello");
-                bundle.putInt("position",getPosition()+1);
-                i.putExtras(bundle);
-                startActivity(i);
-            }else {
+                clickItemPosition = getPosition() + 1;
                 i = FieldsDetailsActivity.newIntent(FieldsActivity.this);
                 Bundle bundle = new Bundle();
                 bundle.putString("name", (String) fieldNameTextView.getText());
                 bundle.putInt("position",getPosition()+1);
                 i.putExtras(bundle);
                 startActivity(i);
-            }
-
         }
     }
 

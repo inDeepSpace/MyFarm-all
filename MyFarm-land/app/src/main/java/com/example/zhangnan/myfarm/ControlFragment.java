@@ -59,7 +59,7 @@ public class ControlFragment extends Fragment {
                 @Override
                 public void onClick(View view) {
                     controlItemClickPosition = getPosition();
-                    addFragment(new ControlDetalisFragment(),"ControlDetalisFragment");
+                    replaceFragment(new ControlDetalisFragment(),"ControlDetalisFragment");
                 }
             });
 
@@ -90,10 +90,10 @@ public class ControlFragment extends Fragment {
 
     }
 
-    public void addFragment(Fragment fragment, String tag) {
+    public void replaceFragment(Fragment fragment, String tag) {
         FragmentManager manager = getFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
-        transaction.add(R.id.fragment_container, fragment, tag);
+        transaction.replace(R.id.fragment_container, fragment, tag);
         transaction.commit();
     }
 

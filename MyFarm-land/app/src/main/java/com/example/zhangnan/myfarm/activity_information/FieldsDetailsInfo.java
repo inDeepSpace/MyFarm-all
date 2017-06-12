@@ -16,7 +16,7 @@ public class FieldsDetailsInfo {
     private com.example.zhangnan.myfarm.activity_information.tmembrane[] tmembrane;
     private com.example.zhangnan.myfarm.activity_information.water[] water;
     private com.example.zhangnan.myfarm.activity_information.web[] web;
-    private int Count;
+    private int count;
 
     public int getId() {
         return id;
@@ -106,14 +106,30 @@ public class FieldsDetailsInfo {
         this.web = web;
     }
 
-    public int getCount() {
-        return Count;
+    public int getSensorsCount() {
+
+        count = 0 ;
+        if (co2 != null && co2.length != 0){
+            int co = co2.length;
+            count+=co;
+        }
+        if (light != null && light.length != 0){
+            int li = light.length;
+            count+=li;
+        }
+
+        if (salt != null && salt.length != 0){
+            int sa = salt.length;
+            count+=sa;
+        }
+
+        if (water != null && water.length != 0){
+            int wa = water.length;
+            count+=wa;
+        }
+
+
+        return count;
     }
 
-    public void setCount(int count) {
-        Count = blower.length+co2.length+lamp.length
-                +light.length+nmembrane.length+pump.length
-                + salt.length+tmembrane.length
-                + water.length+web.length;
-    }
 }
